@@ -11,9 +11,10 @@ Build the project using `gradlew` (gradle wrapper)
 
 There are stand-alone scripts in the src/main/scripts directory that can be run. Run it as follows:
 
-```groovy -Djna.library.path=$ESP_ROOT/lib \
-        -Dnative.lib.dist=../distributions/native-lib-dist-open-6.2/mac \
-        src/main/scriptsn/AstrosAGARD445.groovy
+```
+groovy -Djna.library.path=$ESP_ROOT/lib \
+       -Dnative.lib.dist=../distributions/native-lib-dist-open-6.2/mac \
+       src/main/scriptsn/AstrosAGARD445.groovy
 ```        
 
 Note that when running the script, you will be prompted as follows:
