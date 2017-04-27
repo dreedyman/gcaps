@@ -9,9 +9,9 @@ The project currently uses JNA to wrap the underlying CAPS APIs. There has been 
 
 Build the project using `gradlew` (gradle wrapper)
 
-There is a stand-alone script in the build directory that can be run. Run it as follows:
+There are stand-alone scripts in the src/main/scripts directory that can be run. Run it as follows:
 
-`groovy -Djna.library.path=$ESP_ROOT/lib bin/AstrosAGARD445.groovy`
+`groovy -Djna.library.path=$ESP_ROOT/lib -Dnative.lib.dist=../distributions/native-lib-dist-open-6.2/mac  src/main/scriptsn/AstrosAGARD445.groovy`
 
 Note that when running the script, you will be prompted as follows:
 
