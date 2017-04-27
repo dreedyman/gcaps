@@ -1,0 +1,157 @@
+import java.text.SimpleDateFormat
+
+/*
+ * Distribution Statement
+ *
+ * This computer software has been developed under sponsorship of the United States Air Force Research Lab. Any further
+ * distribution or use by anyone or any data contained therein, unless otherwise specifically provided for,
+ * is prohibited without the written approval of AFRL/RQVC-MSTC, 2210 8th Street Bldg 146, Room 218, WPAFB, OH  45433
+ *
+ * Disclaimer
+ *
+ * This material was prepared as an account of work sponsored by an agency of the United States Government. Neither
+ * the United States Government nor the United States Air Force, nor any of their employees, makes any warranty,
+ * express or implied, or assumes any legal liability or responsibility for the accuracy, completeness, or usefulness
+ * of any information, apparatus, product, or process disclosed, or represents that its use would not infringe privately
+ * owned rights.
+ */
+
+apply plugin: 'maven'
+apply plugin: 'groovy'
+
+group = 'mil.afrl.mstc.open'
+version = '0.1'
+
+String hostName = InetAddress.getLocalHost().getHostName()
+String address = InetAddress.getLocalHost().getHostAddress()
+boolean enclave = (hostName.endsWith("wpafb.af.mil") || address.startsWith("10.131"))
+boolean includeDeployerJars = project.hasProperty("rioDeployAdmin")
+
+ext {
+    nativeDistV = "6.2"
+    opSys = osType()
+    espRoot = System.getenv("ESP_ROOT")
+}
+
+/* Setup repositories */
+repositories {
+    mavenLocal()
+    if (!enclave) {
+        maven { url "http://www.rio-project.org/maven2" }
+        mavenCentral()
+    } else {
+        maven { url "http://10.131.7.138:7001" }
+    }
+}
+
+task publish(dependsOn: uploadArchives) {}
+
+configurations {
+    if(includeDeployerJars)
+        deployerJars
+}
+
+dependencies {
+    if(includeDeployerJars)
+        deployerJars "org.apache.maven.wagon:wagon-ftp:2.2"
+    compile "${group}:gcaps:${version}"
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        if(includeDeployerJars)
+            configuration = configurations.deployerJars
+        pom.whenConfigured {
+            p -> p.dependencies = p.dependencies.findAll {
+                dep -> dep.scope != "compile"
+            }
+        }
+        /*
+         * If not running on the enclave, use the uploadArchives task to publish to the Rio repository.
+         * You must have valid credentials to do this
+         */
+        if(!enclave && includeDeployerJars) {
+            repository(
+                    url: "ftp://www.rio-project.org/maven2") {
+                authentication(userName: rioDeployAdmin, password: rioDeployAdminPassword)
+            }
+            //repository (url: "file:./myrepo")
+        } else {
+            repository ( url: "http://10.131.7.138:7001" )
+        }
+    }
+}
+
+dependencies {
+    compile gradleApi()
+    compile 'net.java.dev.jna:jna:4.4.0'
+    compile 'com.google.code.gson:gson:2.8.0'
+    //runtime group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.7'
+    testCompile "junit:junit:4.12"
+}
+
+def timestamp() {
+    new SimpleDateFormat("MM.dd.yyyy, HH.mm a").format(new Date())
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'mil.afrl.mstc.open.tools.gcaps.GCaps',
+                   'Implementation-Version' : timestamp()
+    }
+}
+
+install.repositories.mavenInstaller.pom.whenConfigured { pom ->
+    pom.dependencies.removeAll { it.scope == "compile" }
+}
+
+clean.doLast {
+    File grape = new File("${System.getProperty("user.home")}/.groovy/grapes/${project.group}/gcaps")
+    if(grape.exists() && grape.deleteDir())
+        println "Removed ${grape.path}"
+    String repoPath = project.group.replace(".", "/")
+    File artifactDir = new File("${System.getProperty("user.home")}/.m2/repository/${repoPath}/gcaps/$project.version")
+    if(artifactDir.exists() && artifactDir.deleteDir())
+        println "Removed ${artifactDir.path}"
+}
+
+task gcaps(type: JavaExec, dependsOn: install) {
+    classpath configurations.compile
+    main = "mil.afrl.mstc.open.gcaps.GCaps"
+    standardOutput = System.out
+    errorOutput = System.err
+    systemProperty "jna.library.path", "${espRoot}/lib/"
+    systemProperty "native.lib.dist", "${project.projectDir.path}/../distributions/native-lib-dist-open-${nativeDistV}/$opSys"
+    systemProperty "projectDir", "${project.buildDir.path}"
+    systemProperty "projectDataRoot", "${project.projectDir.path}/csmData"
+}
+
+test {
+    reports {
+        html.enabled = true
+        junitXml.enabled = false
+    }
+    testLogging {
+        events "passed", "skipped", "failed", "standardOut", "standardError"
+    }
+    systemProperty "jna.library.path", "${espRoot}/lib/"
+    systemProperty "native.lib.dist", "${project.projectDir.path}/../distributions/native-lib-dist-open-${nativeDistV}/$opSys"
+    systemProperty "projectDir", "${project.buildDir.path}"
+    systemProperty "projectDataRoot", "${project.projectDir.path}/csmData"
+}
+
+def osType() {
+    String osType
+    String os = System.properties['os.name'].toLowerCase()
+    if (os.indexOf("mac") > -1) {
+        osType = "mac"
+    } else if (os.indexOf("win") > -1) {
+        osType = "win"
+        apply from: "${rootDir.path}/gradle/sshAntScp.gradle"
+    } else if ((os.indexOf("nix") > -1) || (os.indexOf("nux") > -1)) {
+        osType = "linux"
+    } else {
+        osType="unknown"
+    }
+    osType
+}
