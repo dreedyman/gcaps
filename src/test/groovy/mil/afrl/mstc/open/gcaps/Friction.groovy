@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 package mil.afrl.mstc.open.gcaps
+
+import mil.afrl.mstc.open.gcaps.jna.CapsLibrary
+
 /**
  *
  * @author Dennis Reedy
@@ -23,13 +26,13 @@ class Friction extends MSTCAnalysis {
     def init(options) {
         super.init(options)
         analysis.loadCAPS("${projectDataRoot}/frictionWingTailFuselage.csm", projectName)
-        analysis.setGeometryVal("area", 10.0)
         def aim = ["aim"          : "frictionAIM",
                    "analysisDir"  : "FrictionAnalysisTest",
-                   "capsFidelity" : "LINEARAERO"]
+                   "capsFidelity" : CapsLibrary.CapsFidelity.LINEARAERO]
 
         analysis.loadAIM(aim)
         println ("Setting Mach & Altitude Values")
+        analysis.setGeometryVal("area", 10.0)
         analysis.setAnalysisVal("Mach", [0.5, 1.5])
         analysis.setAnalysisVal("Altitude", [30.0, 60.0])
     }

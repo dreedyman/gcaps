@@ -1,5 +1,4 @@
 #!/usr/bin/env groovy
-
 @Grab('mil.afrl.mstc.open:gcaps:0.1')
 @Grab('net.java.dev.jna:jna:4.4.0')
 @Grab('com.google.code.gson:gson:2.8.0')
@@ -13,10 +12,12 @@ GCaps gCaps = new GCaps()
 
 OS.waitOnInput(60)
 
+File scriptDir = new File(getClass().protectionDomain.codeSource.location.path).parentFile
+String projectRoot = scriptDir.parentFile.parentFile.parentFile.path
+
 String projectName = "AstrosModalAGARD445"
-String projectDir = "${System.getProperty("user.dir")}/build/$projectName"
-//gCaps.loadCAPS("./csmData/feaAGARD445.csm", projectName)
-gCaps.loadCAPS("./csmData/feaAGARD445.csm", projectName, CAPSOut.DEBUG)
+String projectDir = "${projectRoot}/build/$projectName"
+gCaps.loadCAPS("${projectRoot}/csmData/feaAGARD445.csm", projectName, CAPSOut.DEBUG)
 
 def aim = ["aim": "astrosAIM",
         "altName" : "astros",
@@ -89,7 +90,7 @@ println ("Running Astros...")
 File cwd = new File(projectDir)
 
 /* Create symbolic links to files needed to run astros */
-String astrosInstallDir = "/Users/dreedy/dev/src/projects/mstc/distributions/native-lib-dist-open-6.2/mac/astros/12.5/system/"
+String astrosInstallDir = "${System.getProperty("native.lib.dist")}/astros/12.5/system/"
 def files = ["astros.exe", // Executable
           "ASTRO.D01",  // *.DO1 file
           "ASTRO.IDX"]  // *.IDX file

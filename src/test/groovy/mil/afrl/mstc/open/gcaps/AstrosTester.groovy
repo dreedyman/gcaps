@@ -24,7 +24,7 @@ import static org.junit.Assert.assertNotNull
  *
  * @author Dennis Reedy
  */
-class GCapsTest {
+class AstrosTester {
     @Test
     void testAstros() {
         def options = ["projectName"    : "AstrosModalAGARD445",
@@ -39,20 +39,6 @@ class GCapsTest {
         naturalFreq.each { n ->
             println(String.format("Natural freq (Mode %d) = %s (Hz)", mode, n))
             mode += 1
-        }
-    }
-
-    //@Test
-    void testFriction() {
-        def options = ["projectName"    : "FrictionAnalysisTest",
-                       "projectDataRoot": "${System.getProperty("projectDataRoot")}",
-                       "projectDir"     :  "${System.getProperty("projectDir")}"]
-        Friction friction = new Friction()
-        friction.init(options)
-        def outputs = friction.result()
-        assertNotNull(outputs)
-        outputs.each { k, v ->
-            println "$k: $v"
         }
     }
 
