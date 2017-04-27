@@ -23,4 +23,4 @@ Note that when running the script, you will be prompted as follows:
 
 This allows you to attach a debugger (lldb or gdb) to the process in order to help determine where the EXC_BAD_ACCESS is coming from.
 
-There are JUnit tests in the src/tests directory, they currently fail.
+There are JUnit tests in the src/test directory, they currently fail.
