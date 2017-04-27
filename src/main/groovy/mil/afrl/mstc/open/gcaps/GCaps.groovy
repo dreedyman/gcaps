@@ -31,11 +31,7 @@ class GCaps {
     CapsObject.ByReference capsObjectByRef
     PointerByReference analysisRef
     static CapsLibrary cCAPS
-    //static NativeLibrary ocsmLib, udunitsLib, egadsLib
     static {
-        /*ocsmLib = NativeLibrary.getInstance("ocsm")
-        udunitsLib = NativeLibrary.getInstance("udunits2")
-        egadsLib = NativeLibrary.getInstance("egads")*/
         cCAPS = new CapsLibrary()
     }
 
@@ -48,11 +44,9 @@ class GCaps {
     def loadCAPS(String capsFile, String projectName) {
         capsReference = new PointerByReference()
         int result = cCAPS.caps_open(capsFile, projectName==null?capsFile:projectName, capsReference)
-        //int result = cCAPS.caps_open(capsFile, projectName==null?capsFile:projectName, capsObjectByRef)
         if(result!=CAPSError.CAPS_SUCCESS.code)
             println "caps_open: ${CAPSError.valueOf(result)}"
         capsObjectByRef = new CapsObject.ByReference(capsReference.value)
-        //capsReference = byReference.pointer
         result
     }
 
@@ -65,11 +59,11 @@ class GCaps {
             if(dir.mkdirs())
                 println "Created ${dir.path}"
         }
-        //CapsObject.ByReference byReference = new CapsObject.ByReference(capsReference.value)
-        CapsObject.ByValue capsObj = new CapsObject.ByValue(capsObjectByRef.pointer)
-        //analysisRef = new PointerByReference()
-        //int result = cCAPS.caps_load(byReference, asPointer(name), asPointer(analysisDir), capsFidelity, 0, (PointerByReference)null, analysisRef)
-        int result = cCAPS.caps_load(capsObj, asPointer(name), asPointer(analysisDir), capsFidelity, 0, (CapsObject.ByReference)null, capsObjectByRef)
+        CapsObject.ByReference byReference = new CapsObject.ByReference(capsReference.value)
+        //CapsObject.ByValue capsObj = new CapsObject.ByValue(capsObjectByRef.pointer)
+        analysisRef = new PointerByReference()
+        int result = cCAPS.caps_load(byReference, asPointer(name), asPointer(analysisDir), capsFidelity, 0, (PointerByReference)null, analysisRef)
+        //int result = cCAPS.caps_load(capsObj, asPointer(name), asPointer(analysisDir), capsFidelity, 0, (CapsObject.ByReference)null, capsObjectByRef)
         if(result!=CAPSError.CAPS_SUCCESS.code)
             println "caps_load: ${CAPSError.valueOf(result)}"
         return result
@@ -301,117 +295,4 @@ class GCaps {
         return gson.toJson(value)
     }
 
-    static void main(String... args) {
-        println "jna.library.path: ${System.getProperty("jna.library.path")}"
-        println "java.library.path: ${System.getProperty("java.library.path")}"
-
-        GCaps gCaps = new GCaps()
-        String projectName = "AstrosModalAGARD445"
-        //gCaps.loadCAPS("./csmData/feaAGARD445.csm", projectName)
-        gCaps.loadCAPS("./csmData/feaAGARD445.csm", projectName, CAPSOut.DEBUG)
-
-        def aim = ["aim": "astrosAIM",
-                   "altName" : "astros",
-                   "analysisDir" : "${System.getProperty("user.dir")}/$projectName",
-                   "capsFidelity" : CapsLibrary.CapsFidelity.ALL
-        ]
-        gCaps.loadAIM(aim)
-
-
-        /* Set project name so a mesh file is generated */
-        gCaps.setAnalysisVal("Proj_Name", projectName)
-
-        /*  Set meshing parameters */
-        gCaps.setAnalysisVal("Edge_Point_Max", 10)
-        gCaps.setAnalysisVal("Edge_Point_Min", 6)
-        gCaps.setAnalysisVal("Quad_Mesh", true)
-        gCaps.setAnalysisVal("Tess_Params", [0.25, 0.01, 15])
-
-        /*  Set analysis type */
-        gCaps.setAnalysisVal("Analysis_Type", "Modal")
-
-        /* Set analysis inputs */
-        def eigen = [ "extractionMethod"     : "MGIV", //"Lanczos",
-                      "frequencyRange"       : [0.1, 200],
-                      "numEstEigenvalue"     : 1,
-                      "numDesiredEigenvalue" : 2,
-                      "eigenNormaliztion"    : "MASS",
-                      "lanczosMode"          : 2,      // Default - not necesssary
-                      "lanczosType"          : "DPB"]  //Default - not necesssary
-
-        gCaps.setAnalysisVal("Analysis", ["EigenAnalysis": eigen])
-
-        /* Set materials */
-        def mahogany    = ["materialType"        : "orthotropic",
-                           "youngModulus"        : 0.457E6,
-                           "youngModulusLateral" : 0.0636E6,
-                           "poissonRatio"        : 0.31,
-                           "shearModulus"        : 0.0637E6,
-                           "shearModulusTrans1Z" : 0.00227E6,
-                           "shearModulusTrans2Z" : 0.00227E6,
-                           "density"             : 3.5742E-5]
-
-        gCaps.setAnalysisVal("Material", ["Mahogany": mahogany])
-
-        /* Set properties */
-        def shell  = ["propertyType"        : "Shell",
-                      "membraneThickness"   : 0.82,
-                      "material"            : "mahogany",
-                      "bendingInertiaRatio" : 1.0,     // Default - not necesssary
-                      "shearMembraneRatio"  : 5.0/6.0] // Default - not necesssary
-
-        gCaps.setAnalysisVal("Property", ["yatesPlate": shell])
-
-        /* Set constraints */
-        def constraint = ["groupName"     : "constEdge",
-                          "dofConstraint" : 123456]
-
-        gCaps.setAnalysisVal("Constraint", ["edgeConstraint": constraint])
-
-        /* Run pre-analysis */
-        gCaps.preAnalysis()
-
-        if(System.getProperty("verbose")!=null)
-            gCaps.print()
-
-        /* ####### Run Astros #################### */
-        println ("\nRunning Astros...")
-        File cwd = new File(System.getProperty("user.dir"))
-
-        /* Create symbolic links to files needed to run astros */
-        String nativeLib = "${System.getProperty("native.lib.dist")}/mac/astros/12.5/system/"
-        String astrosInstallDir = "${nativeLib}/astros/12.5/system/"
-        def files = ["astros.exe", // Executable
-                     "ASTRO.D01",  // *.DO1 file
-                     "ASTRO.IDX"]  // *.IDX file
-        files.each { f ->
-            File target = new File(cwd, projectName+"/"+f)
-            if(!target.exists()) {
-                File source = new File(astrosInstallDir, f)
-                OS.symlink(source, target)
-            }
-        }
-        String astrosCommand = "astros.exe < " + projectName +  ".dat > " + projectName + ".out"
-        int result = OS.exec(astrosCommand, new File(cwd, projectName))
-        println ("Done running Astros!, result: $result")
-        /* ####################################### */
-
-        /* Run post-analysis */
-        println ("Run post-analysis")
-        gCaps.postAnalysis()
-
-        /* Get Eigen-frequencies */
-        println ("Getting results natural frequencies...")
-        def naturalFreq = gCaps.getAnalysisOutVal("EigenFrequency")
-        if(naturalFreq!=null) {
-            int mode = 1
-            naturalFreq.each { n ->
-                println(String.format("Natural freq (Mode %d) = %s (Hz)", mode, n))
-                mode += 1
-            }
-        } else {
-            println "No data returned"
-        }
-        gCaps.close()
-    }
 }

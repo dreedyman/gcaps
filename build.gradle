@@ -115,17 +115,6 @@ clean.doLast {
         println "Removed ${artifactDir.path}"
 }
 
-task gcaps(type: JavaExec, dependsOn: install) {
-    classpath configurations.compile
-    main = "mil.afrl.mstc.open.gcaps.GCaps"
-    standardOutput = System.out
-    errorOutput = System.err
-    systemProperty "jna.library.path", "${espRoot}/lib/"
-    systemProperty "native.lib.dist", "${project.projectDir.path}/../distributions/native-lib-dist-open-${nativeDistV}/$opSys"
-    systemProperty "projectDir", "${project.buildDir.path}"
-    systemProperty "projectDataRoot", "${project.projectDir.path}/csmData"
-}
-
 test {
     reports {
         html.enabled = true
