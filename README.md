@@ -13,4 +13,10 @@ There is a stand-alone script in the build directory that can be run. Run it as 
 
 `groovy -Djna.library.path=$ESP_ROOT/lib bin/AstrosAGARD445.groovy`
 
+Note that when running the script, you will be prompted as follows:
+
+`Press enter key to proceed (you have up to 60 seconds).`
+
+This allows you to attach a debugger (lldb or gdb) to the process in order to help determine where the EXC_BAD_ACCESS is coming from.
+
 There are JUnit tests in the src/tests directory, they currently fail.
