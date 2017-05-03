@@ -64,23 +64,13 @@ public class CapsLibrary implements Library {
 	 * =========================================================================================================== */
 
 	public native int caps_open(String filename, String pname, PointerByReference pobject);
-    public native int caps_open(String filename, String pname, CapsObject.ByReference pobject);
 	public native int caps_close(CapsObject pobject);
 	public native int caps_outLevel(CapsObject pobject, int outLevel);
-	public native int caps_load(CapsObject pobj, Pointer anam, Pointer apath, int fidelity, int nparent, PointerByReference parents, PointerByReference aobj);
-	public native int caps_load(CapsObject pobj, Pointer anam, Pointer apath, int fidelity, int nparent, CapsObject.ByReference parents, CapsObject.ByReference aobj);
+	public native int caps_load(CapsObject pobj, Pointer anam, Pointer apath, Pointer unitSys, int intent, int nparent, PointerByReference parents, PointerByReference aobj);
 	public native int caps_childByName(CapsObject object, int typ, int styp, String name, PointerByReference child);
 	public native int caps_getValue(CapsObject object, IntByReference type, IntByReference vlen, PointerByReference data, PointerByReference units, IntByReference nErr, PointerByReference errors);
 	public native int caps_setValue(CapsObject object, int nrow, int ncol, Pointer data);
 	public native int caps_setValue(CapsObject object, int nrow, int ncol, CapsTuple.ByReference data);
-	/*public native int caps_info(CapsObject object,
-								PointerByReference name,
-								IntByReference type,
-								IntByReference subtype,
-								PointerByReference link,
-								PointerByReference parent,
-								PointerByReference last);*/
-
 
 	public static native int caps_info(CapsObject object,
 									   PointerByReference name,

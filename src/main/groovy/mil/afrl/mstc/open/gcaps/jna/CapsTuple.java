@@ -21,17 +21,6 @@ public class CapsTuple extends Structure {
 	protected List<String> getFieldOrder() {
 		return Arrays.asList("name", "value");
 	}
-	/**
-	 * @param name the name<br>
-	 * C type : char*<br>
-	 * @param value the value for the pair<br>
-	 * C type : char*
-	 */
-	public CapsTuple(Pointer name, Pointer value) {
-		super();
-		this.name = name;
-		this.value = value;
-	}
 
 	public CapsTuple(Pointer peer) {
 		super(peer);

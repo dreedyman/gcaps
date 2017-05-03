@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 @Grab('mil.afrl.mstc.open:gcaps:0.1')
-@Grab('net.java.dev.jna:jna:4.4.0')
+@Grab('net.java.dev.jna:jna:4.2.2')
 @Grab('com.google.code.gson:gson:2.8.0')
 
 import mil.afrl.mstc.open.gcaps.*
@@ -19,15 +19,15 @@ String projectName = "AstrosModalAGARD445"
 String projectDir = "${projectRoot}/build/$projectName"
 gCaps.loadCAPS("${projectRoot}/csmData/feaAGARD445.csm", projectName, CAPSOut.DEBUG)
 
-def aim = ["aim": "astrosAIM",
-        "altName" : "astros",
-        "analysisDir" : projectDir,
-        "capsFidelity" : CapsLibrary.CapsFidelity.ALL
+def aim = ["aim"        : "astrosAIM",
+           "altName"    : "astros",
+           "analysisDir": projectDir,
+           "capsIntent" : CapsLibrary.CapsFidelity.ALL
 ]
-println ("Load AIM...")
+println("Load AIM...")
 gCaps.loadAIM(aim)
 
-println ("Set analysis variables...")
+println("Set analysis variables...")
 /* Set project name so a mesh file is generated */
 gCaps.setAnalysisVal("Proj_Name", projectName)
 
@@ -41,85 +41,86 @@ gCaps.setAnalysisVal("Tess_Params", [0.25, 0.01, 15])
 gCaps.setAnalysisVal("Analysis_Type", "Modal")
 
 /* Set analysis inputs */
-def eigen = [ "extractionMethod"     : "MGIV", //"Lanczos",
-           "frequencyRange"       : [0.1, 200],
-           "numEstEigenvalue"     : 1,
-           "numDesiredEigenvalue" : 2,
-           "eigenNormaliztion"    : "MASS",
-           "lanczosMode"          : 2,      // Default - not necesssary
-           "lanczosType"          : "DPB"]  //Default - not necesssary
+def eigen = ["extractionMethod"    : "MGIV", //"Lanczos",
+             "frequencyRange"      : [0.1, 200],
+             "numEstEigenvalue"    : 1,
+             "numDesiredEigenvalue": 2,
+             "eigenNormaliztion"   : "MASS",
+             "lanczosMode"         : 2,      // Default - not necesssary
+             "lanczosType"         : "DPB"]  //Default - not necesssary
 
 gCaps.setAnalysisVal("Analysis", ["EigenAnalysis": eigen])
 
 /* Set materials */
-def mahogany    = ["materialType"        : "orthotropic",
-                "youngModulus"        : 0.457E6,
-                "youngModulusLateral" : 0.0636E6,
-                "poissonRatio"        : 0.31,
-                "shearModulus"        : 0.0637E6,
-                "shearModulusTrans1Z" : 0.00227E6,
-                "shearModulusTrans2Z" : 0.00227E6,
-                "density"             : 3.5742E-5]
+def mahogany = ["materialType"       : "orthotropic",
+                "youngModulus"       : 0.457E6,
+                "youngModulusLateral": 0.0636E6,
+                "poissonRatio"       : 0.31,
+                "shearModulus"       : 0.0637E6,
+                "shearModulusTrans1Z": 0.00227E6,
+                "shearModulusTrans2Z": 0.00227E6,
+                "density"            : 3.5742E-5]
 
 gCaps.setAnalysisVal("Material", ["Mahogany": mahogany])
 
 /* Set properties */
-def shell  = ["propertyType"        : "Shell",
-           "membraneThickness"   : 0.82,
-           "material"            : "mahogany",
-           "bendingInertiaRatio" : 1.0,     // Default - not necesssary
-           "shearMembraneRatio"  : 5.0/6.0] // Default - not necesssary
+def shell = ["propertyType"       : "Shell",
+             "membraneThickness"  : 0.82,
+             "material"           : "mahogany",
+             "bendingInertiaRatio": 1.0,     // Default - not necesssary
+             "shearMembraneRatio" : 5.0 / 6.0] // Default - not necesssary
 
 gCaps.setAnalysisVal("Property", ["yatesPlate": shell])
 
 /* Set constraints */
-def constraint = ["groupName"     : "constEdge",
-               "dofConstraint" : 123456]
+def constraint = ["groupName"    : "constEdge",
+                  "dofConstraint": 123456]
 
 gCaps.setAnalysisVal("Constraint", ["edgeConstraint": constraint])
 
 /* Run pre-analysis */
-println ("Run pre-analysis...")
+println("Run pre-analysis...")
 gCaps.preAnalysis()
 
-if(System.getProperty("verbose")!=null)
- gCaps.print()
+if (System.getProperty("verbose") != null)
+    gCaps.print()
 
 /* ####### Run Astros #################### */
-println ("Running Astros...")
 File cwd = new File(projectDir)
 
 /* Create symbolic links to files needed to run astros */
-String astrosInstallDir = "${System.getProperty("native.lib.dist")}/astros/12.5/system/"
+File nativeLibDist = new File(System.getProperty("native.lib.dist"))
+String astrosInstallDir = "${nativeLibDist.canonicalPath}/astros/12.5/system/"
 def files = ["astros.exe", // Executable
-          "ASTRO.D01",  // *.DO1 file
-          "ASTRO.IDX"]  // *.IDX file
+             "ASTRO.D01",  // *.DO1 file
+             "ASTRO.IDX"]  // *.IDX file
 files.each { f ->
- File target = new File(cwd, projectName+"/"+f)
- if(!target.exists()) {
-     File source = new File(astrosInstallDir, f)
-     OS.symlink(source, target)
- }
+    File target = new File(cwd, f)
+    if (!target.exists()) {
+        File source = new File(astrosInstallDir, f)
+        OS.symlink(source, target)
+    }
 }
-String astrosCommand = "astros.exe < " + projectName +  ".dat > " + projectName + ".out"
-int result = OS.exec(astrosCommand, new File(cwd, projectName))
-println ("Done running Astros!, result: $result")
+println("Running Astros in ${cwd.path} ...")
+String astrosCommand = "astros.exe < " + projectName + ".dat > " + projectName + ".out"
+int result = OS.exec(astrosCommand, cwd)
+println("Done running Astros!, result: $result")
 /* ####################################### */
 
 /* Run post-analysis */
-println ("Run post-analysis")
+println("Run post-analysis")
 gCaps.postAnalysis()
 
 /* Get Eigen-frequencies */
-println ("Getting results natural frequencies...")
+println("Getting results natural frequencies...")
 def naturalFreq = gCaps.getAnalysisOutVal("EigenFrequency")
-if(naturalFreq!=null) {
- int mode = 1
- naturalFreq.each { n ->
-     println(String.format("Natural freq (Mode %d) = %s (Hz)", mode, n))
-     mode += 1
- }
+if (naturalFreq != null) {
+    int mode = 1
+    naturalFreq.each { n ->
+        println(String.format("Natural freq (Mode %d) = %s (Hz)", mode, n))
+        mode += 1
+    }
 } else {
- println "No data returned"
+    println "No data returned"
 }
 gCaps.close()

@@ -84,7 +84,8 @@ uploadArchives {
 
 dependencies {
     compile gradleApi()
-    compile 'net.java.dev.jna:jna:4.4.0'
+    //compile 'net.java.dev.jna:jna:4.4.0'
+    compile 'net.java.dev.jna:jna:4.2.2'
     compile 'com.google.code.gson:gson:2.8.0'
     //runtime group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.7'
     testCompile "junit:junit:4.12"
@@ -127,6 +128,12 @@ test {
     systemProperty "native.lib.dist", "${project.projectDir.path}/../distributions/native-lib-dist-open-${nativeDistV}/$opSys"
     systemProperty "projectDir", "${project.buildDir.path}"
     systemProperty "projectDataRoot", "${project.projectDir.path}/csmData"
+}
+
+task script() {
+    doLast {
+        println "foo"
+    }
 }
 
 def osType() {

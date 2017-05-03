@@ -28,7 +28,6 @@ import mil.afrl.mstc.open.gcaps.jna.*
  */
 class GCaps {
     PointerByReference capsReference
-    CapsObject.ByReference capsObjectByRef
     PointerByReference analysisRef
     static CapsLibrary cCAPS
     static {
@@ -46,13 +45,14 @@ class GCaps {
         int result = cCAPS.caps_open(capsFile, projectName==null?capsFile:projectName, capsReference)
         if(result!=CAPSError.CAPS_SUCCESS.code)
             println "caps_open: ${CAPSError.valueOf(result)}"
-        capsObjectByRef = new CapsObject.ByReference(capsReference.value)
         result
     }
 
     def loadAIM(aim) {
         String name = aim["aim"] as String
-        int capsFidelity = aim["capsFidelity"] as int
+        int capsIntent = 0
+        if(aim["capsIntent"]!=null)
+            capsIntent = aim["capsIntent"] as int
         String analysisDir = aim["analysisDir"] as String
         File dir = new File(analysisDir)
         if(!dir.exists()) {
@@ -60,10 +60,8 @@ class GCaps {
                 println "Created ${dir.path}"
         }
         CapsObject.ByReference byReference = new CapsObject.ByReference(capsReference.value)
-        //CapsObject.ByValue capsObj = new CapsObject.ByValue(capsObjectByRef.pointer)
         analysisRef = new PointerByReference()
-        int result = cCAPS.caps_load(byReference, asPointer(name), asPointer(analysisDir), capsFidelity, 0, (PointerByReference)null, analysisRef)
-        //int result = cCAPS.caps_load(capsObj, asPointer(name), asPointer(analysisDir), capsFidelity, 0, (CapsObject.ByReference)null, capsObjectByRef)
+        int result = cCAPS.caps_load(byReference, asPointer(name), asPointer(analysisDir), new Pointer(), capsIntent, 0, (PointerByReference)null, analysisRef)
         if(result!=CAPSError.CAPS_SUCCESS.code)
             println "caps_load: ${CAPSError.valueOf(result)}"
         return result
@@ -114,7 +112,7 @@ class GCaps {
             numCols = ((List)value.get(0)).size()
 
         CAPSVtype capsVtype = CAPSVtype.valueOf(vType.value)
-        //println "${varName} type: ${varValue.getClass().getName()}, vType: ${capsVtype.name()}, numRows : ${numRows}, numCol: ${numCols}"
+        println "\t${varName} type: ${varValue.getClass().getName()}, vType: ${capsVtype.name()}, numRows : ${numRows}, numCol: ${numCols}"
 
         Pointer dataPointer
         switch(capsVtype) {
@@ -156,6 +154,7 @@ class GCaps {
                         tuples[i].value = asPointer(jsonIzed)
                     }
                 }
+                println "\tcaps_setValue"
                 result = cCAPS.caps_setValue(mObj, numRows, numCols, tupleRef)
                 if (result != CAPSError.CAPS_SUCCESS.code) {
                     throw new IllegalStateException("caps_setValue for $varName, [$varValue] failed: ${CAPSError.valueOf(result)}")

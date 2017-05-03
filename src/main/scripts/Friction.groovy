@@ -20,7 +20,7 @@ String projectDir = "${projectRoot}/build/$projectName"
 analysis.loadCAPS("${projectRoot}/csmData/frictionWingTailFuselage.csm", projectName)
 def aim = ["aim"          : "frictionAIM",
            "analysisDir"  : "FrictionAnalysisTest",
-           "capsFidelity" : CapsLibrary.CapsFidelity.LINEARAERO]
+           "capsIntent"   : CapsLibrary.CapsFidelity.LINEARAERO]
 
 analysis.loadAIM(aim)
 println ("Setting Mach & Altitude Values")
