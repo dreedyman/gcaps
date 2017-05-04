@@ -19,12 +19,12 @@ String projectDir = "${projectRoot}/build/$projectName"
 
 analysis.loadCAPS("${projectRoot}/csmData/frictionWingTailFuselage.csm", projectName)
 def aim = ["aim"          : "frictionAIM",
-           "analysisDir"  : "FrictionAnalysisTest",
+           "analysisDir"  : projectDir,
            "capsIntent"   : CapsLibrary.CapsFidelity.LINEARAERO]
 
 analysis.loadAIM(aim)
 println ("Setting Mach & Altitude Values")
-analysis.setGeometryVal("area", 10.0)
+//analysis.setGeometryVal("area", 10.0)
 analysis.setAnalysisVal("Mach", [0.5, 1.5])
 analysis.setAnalysisVal("Altitude", [30.0, 60.0])
 
@@ -35,17 +35,16 @@ if (System.getProperty("verbose") != null)
     analysis.print()
 
 /* ####### Run Friction #################### */
-File cwd = new File(projectDir)
+File workingDir = new File(projectDir)
 
 /* Create symbolic links to files needed to run astros */
 File nativeLibs = new File("${System.getProperty("native.lib.dist")}")
-File target = new File(cwd, projectName + "/friction")
+File target = new File(workingDir, "friction")
 if (!target.exists()) {
     File source = new File(nativeLibs, "sorcer-friction.exe")
     OS.symlink(source, target)
 }
 String frictionCommand = "friction frictionInput.txt frictionOutput.txt > Info.out"
-File workingDir = new File(cwd, projectName)
 println("Running Friction... in ${workingDir.path}")
 int result = OS.exec(frictionCommand, workingDir)
 println("Done running Friction!, result: $result")
