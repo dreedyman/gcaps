@@ -15,6 +15,9 @@
  */
 package mil.afrl.mstc.open.gcaps
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
@@ -22,13 +25,46 @@ import java.util.concurrent.TimeUnit
  *
  * @author Dennis Reedy
  */
+@SuppressWarnings("unused")
 class OS {
+    static Logger logger = LoggerFactory.getLogger(OS.class)
+    static {
+        new OS()
+    }
+    private static String opSysType
+
+    private OS() {
+        if(System.getProperty("os.name").startsWith("Windows")) {
+            opSysType = "win"
+        } else if(System.getProperty("os.name").startsWith("Linux")) {
+            opSysType = "linux"
+        } else {
+            opSysType = "mac"
+        }
+    }
+
+    static String get() {
+        return opSysType
+    }
+
+    static boolean isWindows() {
+        return opSysType.equals("win")
+    }
+
+    static boolean isLinux() {
+        return opSysType.equals("linux")
+    }
+
+    static boolean isMac() {
+        return opSysType.equals("mac")
+    }
+
     static symlink(File source, File target) {
         Files.createSymbolicLink(target.toPath(), source.toPath())
     }
 
-    static exec(String command, File workingDir) {
-        def commandArray = addShellPrefix(command)
+    static exec(String command, File workingDir, String... args) {
+        def commandArray = addShellPrefix(command, args)
         println commandArray
         def process = new ProcessBuilder(commandArray)
                 .directory(workingDir)
@@ -37,6 +73,16 @@ class OS {
         process.inputStream.eachLine {println it}
         process.waitFor()
         return process.exitValue()
+    }
+
+    static execBackground(String command, File workingDir, String... args) {
+        def commandArray = addShellPrefix(command, args)
+        logger.info(Arrays.toString(commandArray))
+        def process = new ProcessBuilder(commandArray)
+                .directory(workingDir)
+                .redirectErrorStream(true)
+                .start()
+        return process
     }
 
     static void waitOnInput(long seconds) {
@@ -52,12 +98,15 @@ class OS {
         reader.join(TimeUnit.SECONDS.toMillis(seconds))
     }
 
-    private static addShellPrefix(String command) {
-        def commandArray = new String[3]
-        commandArray[0] = "sh"
-        commandArray[1] = "-c"
-        commandArray[2] = command
-        return commandArray
+    private static addShellPrefix(String command, String... args) {
+        def commandArray = []
+        commandArray << "sh"
+        commandArray << "-c"
+        commandArray << command
+        for(String arg : args) {
+            commandArray.add(arg)
+        }
+        return commandArray as String[]
     }
 
 }

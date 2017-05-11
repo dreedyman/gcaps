@@ -15,24 +15,39 @@
  */
 package mil.afrl.mstc.open.gcaps
 
+import mil.afrl.mstc.open.gcaps.client.Builder
+
+
 /**
  *
  * @author Dennis Reedy
  */
-abstract class MSTCAnalysis {
-    String projectName
-    String projectDir
+class FrictionConfig {
     String projectDataRoot
+    String projectDir
+    String projectName
 
-    def init(options) {
+    FrictionConfig(options) {
         projectName = options["projectName"]
         projectDataRoot = options['projectDataRoot']
         projectDir = options['projectDir']
     }
 
-    abstract def result()
+    def get() {
+        Builder caps = new Builder()
+        caps.setProjectName(projectName)
+                .setNativeApp("friction")
+                .setCSMData(projectDataRoot+'/frictionWingTailFuselage.csm')
+                .setAIM("frictionAIM", "LINEARAERO")
 
-    /*def close() {
-        analysis.close()
-    }*/
+
+        caps.setGeometryVal("area", 10.0)
+                .setAnalysisVal("Mach", [0.5, 1.5])
+                .setAnalysisVal("Altitude", [9000, 18200.0], "m")
+
+        caps.addAnalysisOutVal("CDtotal", "CDform", "CDfric")
+
+        return caps.build()
+    }
+
 }

@@ -16,30 +16,30 @@
 package mil.afrl.mstc.open.gcaps
 
 import org.junit.Test
-
-import static org.junit.Assert.assertNotNull
-
-
 /**
  *
  * @author Dennis Reedy
  */
 class AstrosTester {
-    @Test
-    void testAstros() {
-        def options = ["projectName"    : "AstrosModalAGARD445",
-                       "projectDataRoot": "${System.getProperty("projectDataRoot")}",
-                       "projectDir"     :  "${System.getProperty("projectDir")}"]
 
-        AstrosAGARD445 astrosAGARD445 = new AstrosAGARD445()
-        astrosAGARD445.init(options)
-        def naturalFreq = astrosAGARD445.result()
-        assertNotNull(naturalFreq)
+    @Test
+    void test() {
+        //PyCAPSManager pyCAPSManager = new PyCAPSManager().launch()
+        PyCAPSManager pyCAPSManager = new PyCAPSManager()
+        AstrosConfig astros = new AstrosConfig(System.getProperty("projectDataRoot"),
+                                               System.getProperty("projectDir"),
+                                               "AstrosModalAGARD445")
+        PyCAPS pyCAPS = pyCAPSManager.getPyCAPS()
+        File json = new File("${System.getProperty("projectDir")}/astrosJson.txt")
+        json.text = astros.get()
+        def result = pyCAPS.submit(astros.get())
         int mode = 1
-        naturalFreq.each { n ->
-            println(String.format("Natural freq (Mode %d) = %s (Hz)", mode, n))
-            mode += 1
+        result['EigenFrequency'].each { eV ->
+            println(String.format("Natural freq (Mode %d) = %s (Hz)", mode, eV))
+            mode++
         }
+        pyCAPS.shutdown()
     }
+
 
 }

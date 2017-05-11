@@ -19,20 +19,7 @@ package mil.afrl.mstc.open.gcaps
  *
  * @author Dennis Reedy
  */
-abstract class MSTCAnalysis {
-    String projectName
-    String projectDir
-    String projectDataRoot
-
-    def init(options) {
-        projectName = options["projectName"]
-        projectDataRoot = options['projectDataRoot']
-        projectDir = options['projectDir']
-    }
-
-    abstract def result()
-
-    /*def close() {
-        analysis.close()
-    }*/
+interface PyCAPS {
+    def submit(String data) throws PyCAPSException
+    def shutdown()
 }

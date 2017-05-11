@@ -13,26 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package mil.afrl.mstc.open.gcaps
+import org.rioproject.config.Constants
 
 /**
+ * The deployment configuration for pyCAPS service
  *
  * @author Dennis Reedy
  */
-abstract class MSTCAnalysis {
-    String projectName
-    String projectDir
-    String projectDataRoot
+deployment(name:'pyCAPS') {
+    groups System.getProperty(Constants.GROUPS_PROPERTY_NAME,
+                              System.getProperty('user.name'))
 
-    def init(options) {
-        projectName = options["projectName"]
-        projectDataRoot = options['projectDataRoot']
-        projectDir = options['projectDir']
+    service(name: 'pyCAPS') {
+        interfaces {
+            classes 'mil.afrl.mstc.open.gcaps.PyCAPS'
+            artifact 'mil.afrl.mstc.open:gcaps:0.1'
+        }
+        implementation(class: 'mil.afrl.mstc.open.gcaps.service.PyCAPSService') {
+            artifact 'mil.afrl.mstc.open:gcaps:0.1'
+        }
+        maintain 1
     }
-
-    abstract def result()
-
-    /*def close() {
-        analysis.close()
-    }*/
 }

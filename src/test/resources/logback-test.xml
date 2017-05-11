@@ -1,0 +1,30 @@
+<!--
+This file is used for MSTC Engineering test logging. Logger configuration for MSTC Engineering providers
+is located in the configured sorcer-modeling distribution in configs/sorcerLogging.groovy file
+-->
+<configuration scan="true">
+    <!--
+    OPTIONAL: If logging is playing up, enable this and look for ch.qos.logback.* WARN/ERROR
+    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>
+    -->
+    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.err</target>
+        <encoder>
+            <pattern>%-5level %d{HH:mm:ss.SSS} %logger{36} - %msg%n%rEx</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+    Configure loggers here. The logger name goes first (remember loggers are hierarchical),
+    followed by the level (in ascending order): ALL | TRACE | DEBUG | INFO | WARN | ERROR | OFF
+    -->
+    <logger name="sorcer.util.SorcerEnv" level="OFF" />
+    <logger name="sorcer.core.provider.exerter.ServiceShell" level="OFF" />
+    <logger name="sorcer.core.dispatch.ProvisionManager" level="OFF" />
+    <logger name="mil.afrl.mstc.open" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="STDERR"/>
+    </root>
+
+</configuration>

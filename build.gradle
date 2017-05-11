@@ -54,7 +54,6 @@ configurations {
 dependencies {
     if(includeDeployerJars)
         deployerJars "org.apache.maven.wagon:wagon-ftp:2.2"
-    compile "${group}:gcaps:${version}"
 }
 
 uploadArchives {
@@ -83,12 +82,11 @@ uploadArchives {
 }
 
 dependencies {
-    compile gradleApi()
-    //compile 'net.java.dev.jna:jna:4.4.0'
-    compile 'net.java.dev.jna:jna:4.2.2'
+    compile 'org.rioproject:rio-lib:5.6.3'
     compile 'com.google.code.gson:gson:2.8.0'
-    //runtime group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.7'
     testCompile "junit:junit:4.12"
+    testRuntime "ch.qos.logback:logback-classic:1.1.3"
+    testRuntime "ch.qos.logback:logback-core:1.1.3"
 }
 
 def timestamp() {
@@ -103,7 +101,7 @@ jar {
 }
 
 install.repositories.mavenInstaller.pom.whenConfigured { pom ->
-    pom.dependencies.removeAll { it.scope == "compile" }
+    pom.dependencies.removeAll { it.scope == "test" }
 }
 
 clean.doLast {
@@ -116,6 +114,9 @@ clean.doLast {
         println "Removed ${artifactDir.path}"
 }
 
+/* Always run tests */
+test.outputs.upToDateWhen { false }
+
 test {
     reports {
         html.enabled = true
@@ -124,16 +125,16 @@ test {
     testLogging {
         events "passed", "skipped", "failed", "standardOut", "standardError"
     }
-    systemProperty "jna.library.path", "${espRoot}/lib/"
-    systemProperty "native.lib.dist", "${project.projectDir.path}/../distributions/native-lib-dist-open-${nativeDistV}/$opSys"
+    systemProperty "native.open.dist", "${project.projectDir.path}/../distributions/native-lib-dist-open-${nativeDistV}/$opSys"
+    systemProperty "script.run.dir", "${project.buildDir.path}"
     systemProperty "projectDir", "${project.buildDir.path}"
+    systemProperty "projectRoot", "${project.projectDir.path}"
     systemProperty "projectDataRoot", "${project.projectDir.path}/csmData"
-}
-
-task script() {
-    doLast {
-        println "foo"
-    }
+    systemProperty "java.security.policy", "${project.projectDir.path}/src/test/config/policy.all"
+    systemProperty "rio.home", "${project.projectDir.path}/../distributions/sorcer-modeling-3.4-phx/rio-5.6.3"
+    systemProperty "java.rmi.server.useCodebaseOnly", "false"
+    systemProperty "java.net.preferIPv4Stack", "true"
+    systemProperty "java.protocol.handler.pkgs", "net.jini.url|sorcer.util.url|org.rioproject.url"
 }
 
 def osType() {

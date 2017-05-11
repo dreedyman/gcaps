@@ -18,7 +18,7 @@ package mil.afrl.mstc.open.gcaps
 import org.junit.Test
 
 import static org.junit.Assert.assertNotNull
-
+import static org.junit.Assert.assertTrue
 /**
  *
  * @author Dennis Reedy
@@ -28,13 +28,33 @@ class FrictionTester {
     void testFriction() {
         def options = ["projectName"    : "FrictionAnalysisTest",
                        "projectDataRoot": "${System.getProperty("projectDataRoot")}",
-                       "projectDir"     :  "${System.getProperty("projectDir")}"]
-        Friction friction = new Friction()
-        friction.init(options)
-        def outputs = friction.result()
-        assertNotNull(outputs)
-        outputs.each { k, v ->
+                       "projectDir"     : "${System.getProperty("projectDir")}"]
+        FrictionConfig friction = new FrictionConfig(options)
+        PyCAPSManager pyCAPSManager = new PyCAPSManager().launch()
+        File json = new File("${System.getProperty("projectDir")}/frictionJson.txt")
+        json.text = friction.get()
+        def result = pyCAPSManager.getPyCAPS().submit(friction.get())
+        assertNotNull(result)
+
+        def formDrag = result['CDform']
+        def totalDrag = result['CDtotal']
+        def frictionDrag = result['CDfric']
+
+        assertTrue(formDrag[0]==0.00331)
+        assertTrue(formDrag[1]==0.00308)
+
+        assertTrue(totalDrag[0]==0.01321)
+        assertTrue(totalDrag[1]==0.01227)
+
+        assertTrue(frictionDrag[0]==0.0099)
+        assertTrue(frictionDrag[1]==0.00919)
+
+        //Total drag = [0.01321, 0.01227]
+        //Form drag = [0.00331, 0.00308]
+        //Friction drag = [0.0099, 0.00919]
+
+        /*result.each { k, v ->
             println "$k: $v"
-        }
+        }*/
     }
 }

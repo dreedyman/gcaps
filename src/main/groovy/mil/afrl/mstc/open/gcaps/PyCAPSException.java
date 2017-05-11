@@ -13,26 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package mil.afrl.mstc.open.gcaps
+package mil.afrl.mstc.open.gcaps;
+
+import java.io.IOException;
 
 /**
- *
  * @author Dennis Reedy
  */
-abstract class MSTCAnalysis {
-    String projectName
-    String projectDir
-    String projectDataRoot
-
-    def init(options) {
-        projectName = options["projectName"]
-        projectDataRoot = options['projectDataRoot']
-        projectDir = options['projectDir']
+public class PyCAPSException extends IOException {
+    public PyCAPSException() {
     }
 
-    abstract def result()
+    public PyCAPSException(String message) {
+        super(message);
+    }
 
-    /*def close() {
-        analysis.close()
-    }*/
+    public PyCAPSException(Throwable cause) {
+        super(cause);
+    }
 }
