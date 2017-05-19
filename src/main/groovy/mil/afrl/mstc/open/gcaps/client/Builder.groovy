@@ -26,20 +26,14 @@ class Builder {
     private geometryVals = [:]
     private outputs = []
     private static String PROJECT_NAME="projectName"
-    private static String NATIVE_APP="nativeApp"
     private static String CSM_DATA="csmData"
-    private static String AIM="aimDATA"
+    private static String AIM="aimData"
     private static String ANALYSIS_VALS="analysisVals"
     private static String GEOMETRY_VALS="geometryVals"
     private static String OUTPUTS="outputs"
 
     Builder setProjectName(String projectName) {
         analysis.put(PROJECT_NAME, projectName)
-        this
-    }
-
-    Builder setNativeApp(String nativeApp) {
-        analysis.put(NATIVE_APP, nativeApp)
         this
     }
 

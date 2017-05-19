@@ -36,7 +36,6 @@ class FrictionConfig {
     def get() {
         Builder caps = new Builder()
         caps.setProjectName(projectName)
-                .setNativeApp("friction")
                 .setCSMData(projectDataRoot+'/frictionWingTailFuselage.csm')
                 .setAIM("frictionAIM", "LINEARAERO")
 

@@ -15,20 +15,30 @@
  */
 package mil.afrl.mstc.open.gcaps
 
+import org.junit.Before
 import org.junit.Test
+import org.rioproject.tools.webster.Webster
+
 /**
  *
  * @author Dennis Reedy
  */
 class AstrosTester {
+    Webster webster
+
+    @Before
+    void boot() {
+        webster = new Webster(0, System.getProperty("user.dir"))
+        println "http://${webster.address}:${webster.port}"
+    }
 
     @Test
     void test() {
-        //PyCAPSManager pyCAPSManager = new PyCAPSManager().launch()
-        PyCAPSManager pyCAPSManager = new PyCAPSManager()
+        PyCAPSManager pyCAPSManager = new PyCAPSManager().launch()
         AstrosConfig astros = new AstrosConfig(System.getProperty("projectDataRoot"),
                                                System.getProperty("projectDir"),
-                                               "AstrosModalAGARD445")
+                                               "AstrosModalAGARD445",
+                                               "http://${webster.address}:${webster.port}")
         PyCAPS pyCAPS = pyCAPSManager.getPyCAPS()
         File json = new File("${System.getProperty("projectDir")}/astrosJson.txt")
         json.text = astros.get()

@@ -25,17 +25,18 @@ class AstrosConfig {
     String projectDataRoot
     String projectDir
     String projectName
+    String url
 
-    AstrosConfig(String projectDataRoot, String projectDir, String projectName) {
+    AstrosConfig(String projectDataRoot, String projectDir, String projectName, String url) {
         this.projectDataRoot = projectDataRoot
         this.projectDir = projectDir
         this.projectName = projectName
+        this.url = url
     }
 
     def get() {
         Builder caps = new Builder()
         caps.setProjectName(projectName)
-                .setNativeApp("astros")
                 .setCSMData(projectDataRoot+'/feaAGARD445.csm')
                 .setAIM("astrosAIM", "astros", "ALL")
         

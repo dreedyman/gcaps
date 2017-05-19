@@ -29,8 +29,13 @@ boolean includeDeployerJars = project.hasProperty("rioDeployAdmin")
 
 ext {
     nativeDistV = "6.2"
+    rioVersion = "5.6.3"
     opSys = osType()
     espRoot = System.getenv("ESP_ROOT")
+    modelingV = "3.4-phx"
+    //distDir = "${project.projectDir.path}/distributions"
+    distDir = "${project.projectDir.path}/../distributions/sorcer-modeling-${modelingV}"
+    rioHome = "${distDir}/rio-${rioVersion}"
 }
 
 /* Setup repositories */
@@ -47,13 +52,10 @@ repositories {
 task publish(dependsOn: uploadArchives) {}
 
 configurations {
+    distribution
+    distribution.extendsFrom(runtime)
     if(includeDeployerJars)
         deployerJars
-}
-
-dependencies {
-    if(includeDeployerJars)
-        deployerJars "org.apache.maven.wagon:wagon-ftp:2.2"
 }
 
 uploadArchives {
@@ -82,11 +84,16 @@ uploadArchives {
 }
 
 dependencies {
-    compile 'org.rioproject:rio-lib:5.6.3'
-    compile 'com.google.code.gson:gson:2.8.0'
+    compile "org.rioproject:rio-lib:${rioVersion}"
+    compile "com.google.code.gson:gson:2.8.0"
+    testCompile "org.rioproject:rio-test:${rioVersion}"
     testCompile "junit:junit:4.12"
+    testCompile "org.rioproject:webster:5.6.3"
     testRuntime "ch.qos.logback:logback-classic:1.1.3"
     testRuntime "ch.qos.logback:logback-core:1.1.3"
+    //distribution "org.rioproject:distribution:${rioVersion}@zip"
+    if(includeDeployerJars)
+        deployerJars "org.apache.maven.wagon:wagon-ftp:2.2"
 }
 
 def timestamp() {
@@ -123,19 +130,51 @@ test {
         junitXml.enabled = false
     }
     testLogging {
-        events "passed", "skipped", "failed", "standardOut", "standardError"
+        events "passed", "skipped", "failed"/*, "standardOut", "standardError"*/
     }
-    systemProperty "native.open.dist", "${project.projectDir.path}/../distributions/native-lib-dist-open-${nativeDistV}/$opSys"
+    systemProperty "native.open.dist", "${project.projectDir.path}/../distributions/native-lib-dist-open-${nativeDistV}"
     systemProperty "script.run.dir", "${project.buildDir.path}"
     systemProperty "projectDir", "${project.buildDir.path}"
     systemProperty "projectRoot", "${project.projectDir.path}"
     systemProperty "projectDataRoot", "${project.projectDir.path}/csmData"
     systemProperty "java.security.policy", "${project.projectDir.path}/src/test/config/policy.all"
-    systemProperty "rio.home", "${project.projectDir.path}/../distributions/sorcer-modeling-3.4-phx/rio-5.6.3"
+    systemProperty "rio.home", "${rioHome}"
     systemProperty "java.rmi.server.useCodebaseOnly", "false"
     systemProperty "java.net.preferIPv4Stack", "true"
     systemProperty "java.protocol.handler.pkgs", "net.jini.url|sorcer.util.url|org.rioproject.url"
+    systemProperty "org.rioproject.test.config", "${project.projectDir.path}/src/test/config/test-config.groovy"
 }
+
+task gatherDeps() {
+    onlyIf {
+        !new File("${distDir}/rio-${rioVersion}").exists()
+    }
+    doLast {
+        /* Copy over distribution dependencies */
+        project.configurations['distribution'].files.each { file ->
+            String distDir = "${project.projectDir.path}/distributions"
+            if (file.path.endsWith("distribution-${rioVersion}.zip")) {
+                copy {
+                    from(zipTree(file)) {
+                        exclude '**/examples.zip'
+                        exclude '**/docs/*'
+                        exclude '**/index.html'
+                    }
+                    into "$distDir"
+                }
+                File docs = new File("$distDir/rio-${rioVersion}/docs")
+                if (docs.exists())
+                    docs.deleteDir()
+                File hyperic = new File("$distDir/rio-${rioVersion}/lib/hyperic")
+                if (hyperic.exists())
+                    hyperic.deleteDir()
+            }
+        }
+    }
+}
+
+test.dependsOn([install])
+//test.dependsOn([gatherDeps/*, bootRio*/])
 
 def osType() {
     String osType

@@ -37,7 +37,6 @@ class Client implements Serializable {
             throw new IllegalArgumentException("port cannot be 0")
         this.address = address
         this.port = port
-        logger.info("Created with: address: {}, port: {}", address, port)
     }
 
     def submit(String data) {

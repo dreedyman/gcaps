@@ -14,7 +14,7 @@ from thread import *
 from sys import argv
 import json
 import logging
-from pprint import pprint
+import urllib
 
 if len(argv)<3:
     print 'You must provide a filename to write the port to, the location of the native libraries'
@@ -78,7 +78,7 @@ def nativeAppRunner(nativeApp, analysisDir, projectName):
     os.chdir(analysisDir)
     logging.info("Working directory: "+os.getcwd())
 
-    if nativeApp.lower() == "astros":
+    if "astros" in nativeApp.lower():
         astrosInstallDir = nativeLibDist+"astros/12.5/system/"
         # Create symbolic links to files needed to run astros
         files = ["astros.exe", # Executable
@@ -93,7 +93,7 @@ def nativeAppRunner(nativeApp, analysisDir, projectName):
         os.system(command)
         logging.info("Completed running astros")
 
-    elif nativeApp.lower() == "friction":
+    elif "friction" in nativeApp.lower():
         frictionInstallDir = nativeLibDist
         if not os.path.isfile("friction.exe"):
             os.symlink(frictionInstallDir +"friction-sorcer.exe", "friction.exe")
@@ -103,21 +103,48 @@ def nativeAppRunner(nativeApp, analysisDir, projectName):
 
     os.chdir(cwd) # Move back to working directory
 
-
 #
-# Function for handling connections. This will be used to handle pyCAPS interaction
+# Function for handling pyCAPS interactions
 #
 def pyCapsThread(conn, data, threadID):
+
     try:
         logging.info("Loading JSON....")
         jsonData = json.loads(data)
 
         projectName = jsonData['projectName']
-        nativeApp = jsonData['nativeApp']
-        csmData = jsonData['csmData']
-        loadAIM = jsonData['aimData']
+        aimData = jsonData['aimData']
         analysisVals = jsonData['analysisVals']
         outputs = jsonData['outputs']
+
+        currentDirectory = os.getcwd()
+        analysisDir = currentDirectory+"/"+projectName+"-"+threadID
+        if jsonData['csmData'].startswith("http"):
+            import urllib
+            from urlparse import urlparse
+            data = jsonData['csmData']
+            logging.info("Get csmData: "+data)
+            u = urlparse(data)
+            ndx = u.path.rfind('/')
+            dir = analysisDir+u.path[0:ndx]
+            os.makedirs(dir)
+            logging.info("Created dir: "+os.path.abspath(dir))
+            fileName = analysisDir+u.path
+            try:
+                csmFile = open(fileName, 'w')
+                csmFile.write(urllib.urlopen(data).read())
+                csmFile.close()
+                logging.info("Created file "+fileName)
+            except HTTPError as e:
+                logging.error('The server couldnt fulfill the request. Error code: '+ e.code)
+            except URLError as e:
+                logging.error('We failed to reach a server. Reason: '+ e.reason)
+
+            csmData = fileName
+        else:
+            csmData = jsonData['csmData']
+
+        logging.info("Using csmData: "+csmData)
 
         myProblem = capsProblem()
         myGeometry = myProblem.loadCAPS(csmData)
@@ -130,18 +157,15 @@ def pyCapsThread(conn, data, threadID):
                 else:
                     myGeometry.setGeometryVal(key, value)
 
-        currentDirectory = os.getcwd() # Get our current working directory
-
-        if "altName" in loadAIM:
-            altName = loadAIM["altName"]
+        if "altName" in aimData:
+            altName = aimData["altName"]
         else:
-            altName = loadAIM['aim']
+            altName = aimData['aim']
 
-
-        myAnalysis = myProblem.loadAIM(aim = loadAIM['aim'],
+        myAnalysis = myProblem.loadAIM(aim = aimData['aim'],
                                        altName = altName,
-                                       analysisDir = currentDirectory+"/build/"+projectName+"-"+threadID,
-                                       capsIntent = loadAIM['capsIntent'])
+                                       analysisDir = analysisDir,
+                                       capsIntent = aimData['capsIntent'])
 
         for analysisVal in analysisVals:
             name = analysisVal['name']
@@ -155,7 +179,7 @@ def pyCapsThread(conn, data, threadID):
                 myAnalysis.setAnalysisVal(name, value, units)
 
         myAnalysis.aimPreAnalysis()
-        nativeAppRunner(nativeApp, myAnalysis.analysisDir, projectName)
+        nativeAppRunner(aimData['aim'], myAnalysis.analysisDir, projectName)
         myAnalysis.aimPostAnalysis()
 
         outVals = {}
@@ -166,11 +190,11 @@ def pyCapsThread(conn, data, threadID):
         conn.send(reply+"\n")
 
     except ValueError as err:
-        logging.error('Decoding JSON has failed: ', str(err))
+        logging.error('Decoding JSON has failed: '+ str(err))
         conn.send("FAILED, "+str(err)+"\n")
 
     except Exception as err:
-        logging.error('Exception caught: ', str(err))
+        logging.error('Exception caught: '+ str(err))
         conn.send("FAILED, "+str(err)+"\n")
 
     conn.close()
@@ -181,7 +205,7 @@ def pyCapsThread(conn, data, threadID):
 while 1:
     # Wait to accept a connection - blocking call
     conn, addr = serverSocket.accept()
-    threadID = str(addr[0] + ':' + str(addr[1]))
+    threadID = str(addr[0] + '_' + str(addr[1]))
     logging.info('Connected with ' + threadID)
 
     data = recvall(conn)

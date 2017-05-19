@@ -24,6 +24,11 @@ deployment(name:'pyCAPS') {
     groups System.getProperty(Constants.GROUPS_PROPERTY_NAME,
                               System.getProperty('user.name'))
 
+    artifact id: 'outrigger-dl',   'org.apache.river:outrigger-dl:2.2.2'
+    artifact id: 'outrigger-impl', 'org.apache.river:outrigger:2.2.2'
+    artifact id: 'mahalo-dl',      'org.apache.river:mahalo-dl:2.2.2'
+    artifact id: 'mahalo-impl',    'org.apache.river:mahalo:2.2.2'
+
     service(name: 'pyCAPS') {
         interfaces {
             classes 'mil.afrl.mstc.open.gcaps.PyCAPS'
@@ -32,6 +37,46 @@ deployment(name:'pyCAPS') {
         implementation(class: 'mil.afrl.mstc.open.gcaps.service.PyCAPSService') {
             artifact 'mil.afrl.mstc.open:gcaps:0.1'
         }
+
+        parameters {
+            parameter name: "native.dist",
+                      value: System.getProperty("rio.home")+'/../../native-lib-dist-open-6.2'
+        }
+
+        association(type: "requires",
+                    serviceType: "net.jini.space.JavaSpace05",
+                    property: "javaSpace", name: "PySpace")
+
+        association(type: "requires",
+                    serviceType: "net.jini.core.transaction.server.TransactionManager",
+                    property: "transactionManager", name: "Mahalo")
+
         maintain 1
+    }
+
+    service(name: 'PySpace') {
+        interfaces {
+            classes 'net.jini.space.JavaSpace05'
+            artifact ref: 'outrigger-dl'
+        }
+
+        implementation(class: 'com.sun.jini.outrigger.TransientOutriggerImpl') {
+            artifact ref: 'outrigger-impl'
+        }
+
+        maintain 1
+
+    }
+
+    service(name:'Mahalo') {
+        interfaces {
+            classes 'net.jini.core.transaction.server.TransactionManager'
+            artifact ref: 'mahalo-dl'
+        }
+        implementation(class: 'com.sun.jini.mahalo.TransientMahaloImpl') {
+            artifact ref: 'mahalo-impl'
+        }
+        maintain 1
+        maxPerMachine 1
     }
 }

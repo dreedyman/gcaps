@@ -13,26 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package mil.afrl.mstc.open.gcaps
+package mil.afrl.mstc.open.gcaps.entry;
+
+import net.jini.core.entry.Entry;
 
 /**
- *
  * @author Dennis Reedy
  */
-abstract class MSTCAnalysis {
-    String projectName
-    String projectDir
-    String projectDataRoot
+public class PyCapsEntry implements Entry {
+    static final long serialVersionUID = 1L;
+    public enum State {
+        NEW, COMPLETE, ERROR
+    }
+    public State state;
+    public Message message;
 
-    def init(options) {
-        projectName = options["projectName"]
-        projectDataRoot = options['projectDataRoot']
-        projectDir = options['projectDir']
+    public PyCapsEntry() {
     }
 
-    abstract def result()
+    public PyCapsEntry(State state) {
+        this.state = state;
+    }
 
-    /*def close() {
-        analysis.close()
-    }*/
+    public Message getMessage() {
+        return message;
+    }
+
+    public void setMessage(Message message) {
+        this.message = message;
+    }
 }
