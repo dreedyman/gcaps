@@ -19,6 +19,7 @@ import java.text.SimpleDateFormat
 apply plugin: 'maven'
 apply plugin: 'groovy'
 
+
 group = 'mil.afrl.mstc.open'
 version = '0.1'
 
@@ -29,7 +30,7 @@ boolean includeDeployerJars = project.hasProperty("rioDeployAdmin")
 
 ext {
     nativeDistV = "6.2"
-    rioVersion = "5.6.3"
+    rioVersion = "5.6.4"
     opSys = osType()
     espRoot = System.getenv("ESP_ROOT")
     modelingV = "3.4-phx"
@@ -85,12 +86,15 @@ uploadArchives {
 
 dependencies {
     compile "org.rioproject:rio-lib:${rioVersion}"
+    compile "org.rioproject.monitor:monitor-api:${rioVersion}"
     compile "com.google.code.gson:gson:2.8.0"
     testCompile "org.rioproject:rio-test:${rioVersion}"
     testCompile "junit:junit:4.12"
     testCompile "org.rioproject:webster:5.6.3"
-    testRuntime "ch.qos.logback:logback-classic:1.1.3"
-    testRuntime "ch.qos.logback:logback-core:1.1.3"
+    runtime "ch.qos.logback:logback-classic:1.1.3"
+    runtime "ch.qos.logback:logback-core:1.1.3"
+    runtime "org.rioproject.resolver:resolver-aether:${rioVersion}"
+
     //distribution "org.rioproject:distribution:${rioVersion}@zip"
     if(includeDeployerJars)
         deployerJars "org.apache.maven.wagon:wagon-ftp:2.2"
@@ -102,8 +106,19 @@ def timestamp() {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'mil.afrl.mstc.open.tools.gcaps.GCaps',
+        attributes 'Main-Class': 'mil.afrl.mstc.open.gcaps.client.Master',
                    'Implementation-Version' : timestamp()
+    }
+    from {
+        configurations.runtime.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+}
+
+processResources {
+    filesMatching('**/systemProps.properties') {
+        filter { it.replace("%VERSION%", project.version) }
     }
 }
 

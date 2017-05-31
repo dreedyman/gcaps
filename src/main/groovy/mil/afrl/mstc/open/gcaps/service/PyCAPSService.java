@@ -28,11 +28,14 @@ import net.jini.core.transaction.server.TransactionManager;
 import net.jini.space.JavaSpace;
 import org.rioproject.annotation.CreateProxy;
 import org.rioproject.annotation.PreAdvertise;
+import org.rioproject.deploy.ServiceBeanInstantiationException;
 import org.rioproject.impl.associations.AssociationProxyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PreDestroy;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -53,13 +56,15 @@ public class PyCAPSService implements PyCAPSFactory {
     private ExecutorService service;
     private static final Logger logger = LoggerFactory.getLogger(PyCAPSService.class);
 
-    public PyCAPSService() {
+    public PyCAPSService() throws ServiceBeanInstantiationException, FileNotFoundException {
+        if(System.getProperty("native.open.dist")==null) {
+            File dist = getLatestNativeLibDist();
+            if (dist == null)
+                throw new ServiceBeanInstantiationException("Could not find a native-lib-dist-open distribution in: " +
+                                                            dist.getPath());
 
-    }
-
-    public void setParameters(Map<String, Object> parms) {
-        String nativeDist = (String)parms.get("native.dist");
-        System.setProperty("native.open.dist", nativeDist);
+            System.setProperty("native.open.dist", dist.getAbsolutePath());
+        }
         new Thread(() -> pyCAPSManager.launch(() -> serviceListener.countDown())).start();
     }
 
@@ -104,6 +109,26 @@ public class PyCAPSService implements PyCAPSFactory {
         throw new IOException("Use proxy");
     }
 
+    private File getLatestNativeLibDist() throws FileNotFoundException {
+        File distDir = new File(System.getProperty(("rio.home"))+"/../..");
+        if(!distDir.exists())
+            throw new FileNotFoundException("Could not find the distribution directory: " + distDir.getPath());
+        File choice = null;
+        long lastMod = 0;
+        File[] files = distDir.listFiles();
+        if(files!=null) {
+            for (File f : files) {
+                if (f.isDirectory() && f.getName().startsWith("native-lib-dist-open")) {
+                    if (f.lastModified() > lastMod) {
+                        choice = f;
+                        lastMod = f.lastModified();
+                    }
+                }
+            }
+        }
+        return choice;
+    }
+
     class SpaceProcessor implements Runnable {
         PyCapsEntry template;
 
@@ -129,17 +154,17 @@ public class PyCAPSService implements PyCAPSFactory {
                             logger.info("Worker processing task: {}", entry);
 
                             String request = entry.getMessage().getRequest();
-                            Map response = null;
                             PyCapsEntry.State state;
                             try {
-                                response = (Map)pyCAPS.submit(request);
+                                Map response = (Map)pyCAPS.submit(request);
                                 state = PyCapsEntry.State.COMPLETE;
+                                entry.getMessage().setResponse(response);
                             } catch (PyCAPSException e) {
                                 state = PyCapsEntry.State.ERROR;
+                                entry.getMessage().setCaughtWhileProcessing(e);
                                 logger.error("pyCAPS failed", e);
                             }
                             entry.state = state;
-                            entry.getMessage().setResponse(response);
                             space.write(entry, tx, timeout);
                             if(tx != null)
                                 tx.commit();

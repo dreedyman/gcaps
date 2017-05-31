@@ -20,7 +20,8 @@ import com.google.gson.Gson
  *
  * @author Dennis Reedy
  */
-class Builder {
+class Builder implements Serializable {
+    static final long serialVersionUID = 1L
     private analysis = [:]
     private analysisVals = []
     private geometryVals = [:]

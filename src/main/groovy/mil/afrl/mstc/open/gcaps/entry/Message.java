@@ -27,6 +27,7 @@ public class Message implements Comparable<Message>,Serializable {
     private String request;
     private Map response = new HashMap();
     private Integer index;
+    private Throwable caughtWhileProcessing;
 
     public Message(Integer index) {
         this.index = index;
@@ -42,6 +43,14 @@ public class Message implements Comparable<Message>,Serializable {
 
     public Map getResponse() {
         return response;
+    }
+
+    public Throwable getCaughtWhileProcessing() {
+        return caughtWhileProcessing;
+    }
+
+    public void setCaughtWhileProcessing(Throwable caughtWhileProcessing) {
+        this.caughtWhileProcessing = caughtWhileProcessing;
     }
 
     @SuppressWarnings("unchecked")
