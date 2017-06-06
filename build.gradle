@@ -19,7 +19,6 @@ import java.text.SimpleDateFormat
 apply plugin: 'maven'
 apply plugin: 'groovy'
 
-
 group = 'mil.afrl.mstc.open'
 version = '0.1'
 
@@ -29,13 +28,15 @@ boolean enclave = (hostName.endsWith("wpafb.af.mil") || address.startsWith("10.1
 boolean includeDeployerJars = project.hasProperty("rioDeployAdmin")
 
 ext {
-    nativeDistV = "6.2"
-    rioVersion = "5.6.4"
-    opSys = osType()
     espRoot = System.getenv("ESP_ROOT")
-    modelingV = "3.4-phx"
-    //distDir = "${project.projectDir.path}/distributions"
+    nativeDistV = "6.2"
+    modelingV = "3.5"
     distDir = "${project.projectDir.path}/../distributions/sorcer-modeling-${modelingV}"
+    def versionProps = new Properties()
+    file("${distDir}/configs/versions.properties").withReader { reader ->
+        versionProps.load(reader)
+    }
+    rioVersion = versionProps['rio.version']
     rioHome = "${distDir}/rio-${rioVersion}"
 }
 
@@ -88,6 +89,7 @@ dependencies {
     compile "org.rioproject:rio-lib:${rioVersion}"
     compile "org.rioproject.monitor:monitor-api:${rioVersion}"
     compile "com.google.code.gson:gson:2.8.0"
+    compile 'net.java.dev.jna:jna:4.2.2'
     testCompile "org.rioproject:rio-test:${rioVersion}"
     testCompile "junit:junit:4.12"
     testCompile "org.rioproject:webster:5.6.3"
@@ -147,6 +149,7 @@ test {
     testLogging {
         events "passed", "skipped", "failed"/*, "standardOut", "standardError"*/
     }
+    systemProperty "jna.library.path", "${espRoot}/lib/"
     systemProperty "native.open.dist", "${project.projectDir.path}/../distributions/native-lib-dist-open-${nativeDistV}"
     systemProperty "script.run.dir", "${project.buildDir.path}"
     systemProperty "projectDir", "${project.buildDir.path}"
@@ -154,9 +157,6 @@ test {
     systemProperty "projectDataRoot", "${project.projectDir.path}/csmData"
     systemProperty "java.security.policy", "${project.projectDir.path}/src/test/config/policy.all"
     systemProperty "rio.home", "${rioHome}"
-    systemProperty "java.rmi.server.useCodebaseOnly", "false"
-    systemProperty "java.net.preferIPv4Stack", "true"
-    systemProperty "java.protocol.handler.pkgs", "net.jini.url|sorcer.util.url|org.rioproject.url"
     systemProperty "org.rioproject.test.config", "${project.projectDir.path}/src/test/config/test-config.groovy"
 }
 
@@ -189,20 +189,3 @@ task gatherDeps() {
 }
 
 test.dependsOn([install])
-//test.dependsOn([gatherDeps/*, bootRio*/])
-
-def osType() {
-    String osType
-    String os = System.properties['os.name'].toLowerCase()
-    if (os.indexOf("mac") > -1) {
-        osType = "mac"
-    } else if (os.indexOf("win") > -1) {
-        osType = "win"
-        apply from: "${rootDir.path}/gradle/sshAntScp.gradle"
-    } else if ((os.indexOf("nix") > -1) || (os.indexOf("nux") > -1)) {
-        osType = "linux"
-    } else {
-        osType="unknown"
-    }
-    osType
-}
